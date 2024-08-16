@@ -1,0 +1,42 @@
+name: Flutter CI/CD
+
+on: [push, pull_request]
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+
+    env:
+      PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
+      GCLOUD_KEY_FILE: ${{ secrets.GCLOUD_KEY_FILE }}
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up JDK 1.8
+      uses: actions/setup-java@v1
+      with:
+        java-version: 1.8
+
+    - name: Install Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 'latest'
+
+    - name: Install dependencies
+      run: flutter pub get
+    
+    - name: Integration test
+      run: flutter drive --target=integration_test/app_test.dart
+
+    - name: Authenticate to Google Cloud
+      uses: google-github-actions/auth@v0
+      with:
+        credentials_json: ${{ secrets.GCLOUD_KEY_FILE }}
+
+    - name: Install gcloud SDK
+      uses: google-github-actions/setup-gcloud@v0
+
+    - name: Run tests on Firebase Test Lab
+      run: tools/run_firebase_test.sh
