@@ -12,31 +12,32 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
 
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v1
+    - name: Set up JDK 11
+      uses: actions/setup-java@v4
       with:
-        java-version: 1.8
+        distribution: 'temurin'
+        java-version: '11'
 
     - name: Install Flutter
       uses: subosito/flutter-action@v2
       with:
-        flutter-version: 'latest'
+        channel: stable
 
     - name: Install dependencies
       run: flutter pub get
-    
-    - name: Integration test
-      run: flutter drive --target=integration_test/app_test.dart
 
     - name: Authenticate to Google Cloud
-      uses: google-github-actions/auth@v0
+      uses: google-github-actions/auth@v2
       with:
         credentials_json: ${{ secrets.GCLOUD_KEY_FILE }}
 
     - name: Install gcloud SDK
-      uses: google-github-actions/setup-gcloud@v0
+      uses: google-github-actions/setup-gcloud@v2
+
+    - name: Give execute permission to run_firebase_test.sh
+      run: chmod +x tools/run_firebase_test.sh  
 
     - name: Run tests on Firebase Test Lab
       run: tools/run_firebase_test.sh

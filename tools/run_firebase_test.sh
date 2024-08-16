@@ -4,17 +4,25 @@ set -e
 
 gcloud config set project $PROJECT_ID
 
-# Build the APKs
-flutter build apk --release
-flutter build apk --debug --target=integration_test/app_test.dart
+# Navigate to android directory and build the APKs
+pushd android
+flutter build apk
+./gradlew app:assembleAndroidTest
+./gradlew app:assembleDebug -Ptarget=integration_test/app_test.dart
+popd
 
 # Run the tests on Firebase Test Lab
-TEST_RESULTS=$(gcloud firebase test android run \
+gcloud firebase test android run \
   --type instrumentation \
-  --app build/app/outputs/flutter-apk/app-release.apk \
-  --test build/app/outputs/flutter-apk/app-release-androidTest.apk \
-  --device model=Nexus6,version=27,locale=en,orientation=portrait)
+  --app build/app/outputs/apk/debug/app-debug.apk \
+  --test build/app/outputs/apk/androidTest/debug/app-debug-androidTest.apk \
 
-# Extract the results URL
-RESULTS_URL=$(echo "$TEST_RESULTS" | grep -oP 'Test results will be streamed to \K(https?://[^\s]+)')
-echo "Test results available at: $RESULTS_URL"
+# Check exit code from Firebase Test Lab
+EXIT_CODE=$?
+if [ $EXIT_CODE -eq 0 ]; then
+  echo "Test on Firebase Test Lab passed."
+else
+  echo "Test on Firebase Test Lab failed with exit code ${EXIT_CODE}."
+fi
+
+exit $EXIT_CODE
